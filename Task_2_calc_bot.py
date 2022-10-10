@@ -1,65 +1,138 @@
 import telebot
+import datetime
 
+bot = telebot.TeleBot('5434161555:AAGJZZIBqLG1hbayH2aQmgBWSO_gwzKsIr8')
 
-token = '5434161555:AAGJZZIBqLG1hbayH2aQmgBWSO_gwzKsIr8'
+buttons = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+buttons_act = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+buttons.row(telebot.types.KeyboardButton('Комплексные'),
+            telebot.types.KeyboardButton('Рациональные'),
+            telebot.types.KeyboardButton('Ещё не определился'))
 
-bot = telebot.TeleBot(token)
+buttons_act.row(telebot.types.KeyboardButton('+'),
+                telebot.types.KeyboardButton('-'),
+                telebot.types.KeyboardButton('*'),
+                telebot.types.KeyboardButton('/'))
 
-
-@bot.message_handler(commands=['hello'])
-def hello_answer(msg: telebot.types.Message):
-    bot.send_message(chat_id=msg.from_user.id,
-                     text=f'Привет, {msg.from_user.first_name}')
+global now
+now = datetime.datetime.now()
 
 
 @bot.message_handler()
-def answer(msg: telebot.types.Message):
+def hello(msg: telebot.types.Message):
     bot.send_message(chat_id=msg.from_user.id,
-                     text=f'Не вводите буквы - бот ломается :)')
-    while not msg.text.isdigit():
+                     text='Здравствуйте.\nВыберите режим работы калькулятора.',
+                     reply_markup=buttons)
+    bot.register_next_step_handler(msg, answer)
+
+
+def answer(msg: telebot.types.Message):
+    if msg.text == 'Комплексные':
+        bot.register_next_step_handler(msg, complex_counter1)
+        bot.send_message(chat_id=msg.from_user.id, text='Введите первое комплексное число.',
+                         reply_markup=telebot.types.ReplyKeyboardRemove())
+        logging(f'{now} Выбран режим комплексных чисел;')
+    elif msg.text == 'Рациональные':
+        bot.register_next_step_handler(msg, rational_counter)
+        bot.send_message(chat_id=msg.from_user.id, text='Введите выражение с рациональными числами.',
+                         reply_markup=telebot.types.ReplyKeyboardRemove())
+        logging(f'{now} Выбран режим рациональных чисел; ')
+    elif msg.text == 'Ещё не определился':
+        bot.register_next_step_handler(msg, answer)
         bot.send_message(chat_id=msg.from_user.id,
-                         text=f'Введите числа в формате A + B (с пробелами)')
-        break
-    if ' ' not in msg.text:
-        bot.send_message(chat_id=msg.from_user.id,
-                         text=f'Введите пример в формате A + B (с пробелами)')
+                         text='Возвращайтесь, когда определитесь.')
+        logging(f'{now} Отказ от ввода;\n')
     else:
-        c = msg.text.split(' ')
-        if '+' in c:
-            a1 = float(c[0])
-            a2 = float(c[2])
-            s = summ(a1, a2)
-        elif '-' in c:
-            a1 = float(c[0])
-            a2 = float(c[2])
-            s = diff(a1, a2)
-        elif '*' in c:
-            a1 = float(c[0])
-            a2 = float(c[2])
-            s = mult(a1, a2)
-        elif '/' in c:
-            a1 = float(c[0])
-            a2 = float(c[2])
-            s = div(a1, a2)
+        bot.register_next_step_handler(msg, answer)
+        bot.send_message(chat_id=msg.from_user.id,
+                         text='Пожалуйста, используйте кнопки.')
+        logging(f'{now} Ошибка ввода;\n')
 
         bot.send_message(chat_id=msg.from_user.id,
-                         text=f'{msg.text} = {s}')
+                         text='Выберите режим работы калькулятора.', reply_markup=buttons)
 
 
-def summ(a, b):
-    return a+b
+def complex_counter1(msg: telebot.types.Message):
+    bot.register_next_step_handler(msg, complex_counter2)
+
+    bot.send_message(chat_id=msg.from_user.id, text='Выберите действие',
+                     reply_markup=buttons_act)
+    global aa
+    aa = msg.text.replace(' ', '')
+    logging('Введено ' + aa + ';')
 
 
-def diff(a, b):
-    return a-b
+def complex_counter2(msg: telebot.types.Message):
+    bot.register_next_step_handler(msg, complex_result)
+    bot.send_message(chat_id=msg.from_user.id, text='Введите второе число')
+    global act
+    act = msg.text
+    logging('Выбрано действие: ' + act + ';')
 
 
-def mult(a, b):
-    return a*b
+def complex_result(msg: telebot.types.Message):
+
+    bot.send_message(chat_id=msg.from_user.id, text=f'Результат:',
+                     reply_markup=telebot.types.ReplyKeyboardRemove())
+    global bb
+    bb = msg.text.replace(' ', '')
+    logging('Введено ' + bb + ';')
+
+    a = 0
+    if act == '+':
+        a = (complex(aa) + complex(bb))
+        bot.send_message(chat_id=msg.from_user.id, text=a,
+                         reply_markup=telebot.types.ReplyKeyboardRemove())
+    elif act == '-':
+        a = (complex(aa) - complex(bb))
+        bot.send_message(chat_id=msg.from_user.id, text=(
+            complex(aa) - complex(bb)), reply_markup=telebot.types.ReplyKeyboardRemove())
+    elif act == '*':
+        a = (complex(aa) * complex(bb))
+        bot.send_message(chat_id=msg.from_user.id, text=(
+            complex(aa) * complex(bb)), reply_markup=telebot.types.ReplyKeyboardRemove())
+    elif act == '/':
+        a = (complex(aa) - complex(bb))
+        bot.send_message(chat_id=msg.from_user.id, text=(
+            complex(aa) / complex(bb)), reply_markup=telebot.types.ReplyKeyboardRemove())
+
+    logging(f'Получен ответ: {a} \n')
+    bot.register_next_step_handler(msg, hello)
 
 
-def div(a, b):
-    return a/b
+def rational_counter(msg: telebot.types.Message):
+
+    c = msg.text.replace(' ', '')
+    logging('Введено ' + c)
+    s = 0
+    if '+' in c:
+        c = msg.text.split('+')
+        a1 = float(c[0])
+        a2 = float(c[1])
+        s = a1 + a2
+    elif '-' in c:
+        c = msg.text.split('-')
+        a1 = float(c[0])
+        a2 = float(c[1])
+        s = a1 - a2
+    elif '*' in c:
+        c = msg.text.split('*')
+        a1 = float(c[0])
+        a2 = float(c[1])
+        s = a1 * a2
+    elif '/' in c:
+        c = msg.text.split('/')
+        a1 = float(c[0])
+        a2 = float(c[1])
+        s = a1 / a2
+
+    bot.send_message(chat_id=msg.from_user.id, text=f'{msg.text} = {s}')
+    logging(f'Получен ответ: {s} \n')
+
+
+def logging(line):
+    with open('action.log', 'a', encoding="utf-8") as data:
+        data.write(line + ' ')
 
 
 print('Server start...')
