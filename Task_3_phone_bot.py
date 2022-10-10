@@ -8,7 +8,7 @@ bot = telebot.TeleBot(token)
 @bot.message_handler(commands=['help'])
 def start(msg: telebot.types.Message):
     bot.send_message(chat_id=msg.from_user.id,
-                     text=f'Привет, {msg.from_user.first_name}, вот список команд для работы:\n/view - просмотр справочника\n/find "строка для поиска" - найти запись\n/delete "строка для удаления"- удалить запись\n/export "имя_файла.txt"- экспорт в .txt\n/import "имя_файла.txt"- импорт из .txt')
+                     text=f'Привет, {msg.from_user.first_name}, вот список команд для работы:\n/view - просмотр справочника\n/add "Фамилия, Имя, номер телефона, описание" - добавить запись\n/find "строка для поиска" - найти запись\n/delete "строка для удаления"- удалить запись\n/export "имя_файла.txt"- экспорт в .txt\n/import "имя_файла.txt"- импорт из .txt')
 
 
 @bot.message_handler(commands=['view'])
@@ -20,6 +20,17 @@ def view(msg: telebot.types.Message):
         for line in data:
             bot.send_message(chat_id=msg.from_user.id,
                              text=line)
+
+
+@bot.message_handler(commands=['add'])
+def add(msg: telebot.types.Message):
+    bot.send_message(chat_id=msg.from_user.id,
+                     text=f'Добавление записи')
+    file = 'base.txt'
+    a = msg.text.replace('/add','')
+    with open(file, 'a', encoding="utf-8") as data:
+        data.write('\n'+ a +'\n')
+        bot.send_message(chat_id=msg.from_user.id,text=f'Добавлено {a}')
 
 
 @bot.message_handler(commands=['find'])
